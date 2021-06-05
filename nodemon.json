@@ -1,0 +1,6 @@
+{
+  "watch": ["src", "types", "graphql"],
+  "execMap": {
+    "ts": "node -r ts-node/register"
+  }
+}

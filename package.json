@@ -3,13 +3,32 @@
   "version": "1.0.0",
   "description": "An unofficial API wrapper for entry.",
   "main": "dist/index.js",
+  "scripts": {
+    "start": "node -r ts-node/register src/index.ts",
+    "dev": "nodemon src/index.ts",
+    "format": "prettier-standard --format"
+  },
   "repository": "https://github.com/thoratica/entry-api.git",
   "author": "thoratica <me@tica.fun>",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^15.12.1",
     "@types/node-fetch": "^2.5.10",
+    "@typescript-eslint/eslint-plugin": "^4.26.0",
+    "@typescript-eslint/parser": "^4.26.0",
+    "eslint": "^7.28.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "prettier": "^2.3.0",
+    "prettier-standard": "^16.4.1",
     "ts-node": "^10.0.0",
-    "typescript": "^4.3.2"
+    "typescript": "next"
+  },
+  "dependencies": {
+    "axios": "^0.21.1"
   }
 }
