@@ -1,5 +1,19 @@
-import { BannedInfo, BannedReason } from './BannedInfo'
+import { BannedInfo } from './BannedInfo'
 import { Image } from './Image'
+import { FollowProject } from './ProjectInfo'
+
+export interface FollowUser {
+  id: string
+  username: string
+  nickname: string
+  profileImage: Image | null
+  status: {
+    following: number
+    follower: number
+  }
+  isFollow: boolean
+  projects: FollowProject[]
+}
 
 export interface UserPreview {
   id: string

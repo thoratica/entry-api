@@ -1,13 +1,31 @@
 import { createWriteStream } from 'fs'
 import { resolve } from 'path'
 import { createInterface } from 'readline'
+import { IPADDRESS_BANNED } from '../../graphql/banned'
 import {
   GET_CAPTCHA_DATA,
   SIGNIN_BY_USERNAME,
   WITHDRAW_SIGNIN_BY_USERNAME
-} from '../graphql/user'
-import { UserInfo } from '../types/UserInfo'
-import { graphQL, rawRequest, setSid } from './request'
+} from '../../graphql/user'
+import { UserInfo } from '../../types/UserInfo'
+import { getCookie, graphQL, rawRequest, setCookie } from '../request'
+
+export const checkIpBanned = async () => {
+  const checkIpBannedRes = await graphQL(IPADDRESS_BANNED, {})
+  const checkIpBannedData = await checkIpBannedRes.json()
+  if (Object.keys(checkIpBannedData).includes('errors')) {
+    throw new Error(checkIpBannedData.errors[0].statusCode)
+  }
+  setCookie(
+    `${getCookie()};ETR_CHK=${
+      checkIpBannedRes.headers
+        .get('set-cookie')
+        ?.split('ETR_CHK=')[1]
+        .split(';')[0]
+    }`
+  )
+  return checkIpBannedData
+}
 
 export const login = async (
   username: string,
@@ -19,7 +37,7 @@ export const login = async (
     captchaValue?: string
   } = { enterCaptcha: false }
 ): Promise<UserInfo> => {
-  const res = await graphQL(
+  const signinRes = await graphQL(
     captcha.enterCaptcha ? WITHDRAW_SIGNIN_BY_USERNAME : SIGNIN_BY_USERNAME,
     captcha.enterCaptcha
       ? {
@@ -36,21 +54,20 @@ export const login = async (
           rememberme: remember
         }
   )
-  if (Object.keys(res.data).includes('errors')) {
-    if (res.data.errors[0].statusCode === 429) {
+  const signinData = await signinRes.json()
+  if (Object.keys(signinData).includes('errors')) {
+    if (signinData.errors[0].statusCode === 429) {
       const captchaDataRes = await graphQL(GET_CAPTCHA_DATA, {
         captchaType: 'image'
       })
 
-      const key = captchaDataRes.data.data.getCaptchaData.result.key
-      const url = `https://playentry.org/api/captcha/image/${key}`
-      const path = resolve(__dirname, 'captcha.jpg')
+      const key = (await captchaDataRes.json()).data.getCaptchaData.result.key
+      const url = `/api/captcha/image/${key}`
+      const path = resolve(process.cwd(), 'captcha.jpg')
       const writer = createWriteStream(path)
+      const captchaImageRes = await rawRequest(url)
 
-      const captchaImageRes = await rawRequest.get(url, {
-        responseType: 'stream'
-      })
-      captchaImageRes.data.pipe(writer)
+      captchaImageRes.body.pipe(writer)
 
       return await new Promise(resolve =>
         writer.on('finish', async () => {
@@ -74,15 +91,22 @@ export const login = async (
       )
     } else {
       throw new Error(
-        res.data.errors
+        signinData.errors
           .map((err: { statusCode: number }) => err.statusCode)
           .join(', ')
       )
     }
   } else {
-    setSid(res.headers['set-cookie'][2].slice('ETR_SID='.length).split(';')[0])
+    const cookie = new RegExp('ETR_SID' + '=[^;]+').exec(
+      signinRes.headers.get('set-cookie')!
+    )
+    const ETR_SID = decodeURIComponent(
+      cookie ? cookie.toString().replace(/^[^=]+./, '') : ''
+    )
+    setCookie(`ETR_SID=${ETR_SID}`)
+    await checkIpBanned()
     return captcha.enterCaptcha
-      ? res.data.data.withdrawSigninByUsername
-      : res.data.data.signinByUsername
+      ? signinData.data.withdrawSigninByUsername
+      : signinData.data.signinByUsername
   }
 }
