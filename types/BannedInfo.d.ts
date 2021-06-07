@@ -9,7 +9,6 @@ export type BannedReason =
   | 'obscene'
   | 'plaster'
   | 'verbal'
-  | string
 
 export interface BannedInfo {
   username: string
