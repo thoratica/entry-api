@@ -20,10 +20,19 @@ export const rawRequest = async (
 }
 export const graphQL = async (
   query: string,
-  variables: Record<string, any>
+  variables: Record<string, any>,
+  returnRawResponse: boolean = false
 ) => {
   const res = await rawRequest('/graphql', 'POST', { query, variables })
-  return res
+
+  if (returnRawResponse) return res
+
+  const data = await res.json()
+  if (Object.keys(data).includes('errors')) {
+    throw new Error(data.errors[0].statusCode)
+  }
+
+  return data.data
 }
 
 export const requestTranslations = async (

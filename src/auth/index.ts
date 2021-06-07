@@ -11,7 +11,7 @@ import { UserInfo } from '../../types/UserInfo'
 import { getCookie, graphQL, rawRequest, setCookie } from '../request'
 
 export const checkIpBanned = async () => {
-  const checkIpBannedRes = await graphQL(IPADDRESS_BANNED, {})
+  const checkIpBannedRes = await graphQL(IPADDRESS_BANNED, {}, true)
   const checkIpBannedData = await checkIpBannedRes.json()
   if (Object.keys(checkIpBannedData).includes('errors')) {
     throw new Error(checkIpBannedData.errors[0].statusCode)
@@ -52,14 +52,19 @@ export const login = async (
           username,
           password,
           rememberme: remember
-        }
+        },
+    true
   )
   const signinData = await signinRes.json()
   if (Object.keys(signinData).includes('errors')) {
     if (signinData.errors[0].statusCode === 429) {
-      const captchaDataRes = await graphQL(GET_CAPTCHA_DATA, {
-        captchaType: 'image'
-      })
+      const captchaDataRes = await graphQL(
+        GET_CAPTCHA_DATA,
+        {
+          captchaType: 'image'
+        },
+        true
+      )
 
       const key = (await captchaDataRes.json()).data.getCaptchaData.result.key
       const url = `/api/captcha/image/${key}`
